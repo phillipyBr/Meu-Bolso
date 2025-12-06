@@ -4,30 +4,42 @@ import {
   PlusCircle, 
   List, 
   BrainCircuit, 
-  Wallet 
+  Wallet,
+  Settings
 } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { TransactionList } from './components/TransactionList';
 import { TransactionForm } from './components/TransactionForm';
 import { AIAdvisor } from './components/AIAdvisor';
-import { Transaction, ViewState, FilterType } from './types';
-import { INITIAL_TRANSACTIONS } from './constants';
+import { CategoryManager } from './components/CategoryManager';
+import { Transaction, ViewState, FilterType, CategoryState, TransactionType } from './types';
+import { INITIAL_TRANSACTIONS, DEFAULT_CATEGORIES } from './constants';
 
 const App: React.FC = () => {
-  // Initialize state with dummy data or empty array
+  // Initialize transactions from localStorage
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const saved = localStorage.getItem('meuBolso_transactions');
+    const saved = localStorage.getItem('meuBolso_data_v1');
     return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
+  });
+
+  // Initialize categories from localStorage
+  const [categories, setCategories] = useState<CategoryState>(() => {
+    const saved = localStorage.getItem('meuBolso_categories_v1');
+    return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
   });
 
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
   const [currentFilter, setCurrentFilter] = useState<FilterType>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  // Persist data
+  // Persist data whenever it changes
   useEffect(() => {
-    localStorage.setItem('meuBolso_transactions', JSON.stringify(transactions));
+    localStorage.setItem('meuBolso_data_v1', JSON.stringify(transactions));
   }, [transactions]);
+
+  useEffect(() => {
+    localStorage.setItem('meuBolso_categories_v1', JSON.stringify(categories));
+  }, [categories]);
 
   const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
     const newTransaction: Transaction = {
@@ -40,6 +52,21 @@ const App: React.FC = () => {
 
   const deleteTransaction = (id: string) => {
     setTransactions(prev => prev.filter(t => t.id !== id));
+  };
+
+  const addCategory = (type: TransactionType, name: string) => {
+    if (categories[type].includes(name)) return;
+    setCategories(prev => ({
+      ...prev,
+      [type]: [...prev[type], name]
+    }));
+  };
+
+  const deleteCategory = (type: TransactionType, name: string) => {
+    setCategories(prev => ({
+      ...prev,
+      [type]: prev[type].filter(c => c !== name)
+    }));
   };
 
   const handleNavigate = (view: ViewState, filter: FilterType = 'all') => {
@@ -61,6 +88,14 @@ const App: React.FC = () => {
         );
       case 'advisor':
         return <AIAdvisor transactions={transactions} />;
+      case 'categories':
+        return (
+          <CategoryManager 
+            categories={categories}
+            onAddCategory={addCategory}
+            onDeleteCategory={deleteCategory}
+          />
+        );
       default:
         return <Dashboard transactions={transactions} onNavigate={handleNavigate} />;
     }
@@ -117,6 +152,15 @@ const App: React.FC = () => {
             <BrainCircuit className="w-5 h-5" />
             Consultor IA
           </button>
+          <button 
+            onClick={() => handleNavigate('categories')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+              currentView === 'categories' ? 'bg-gray-100 text-gray-800 font-medium' : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <Settings className="w-5 h-5" />
+            Categorias
+          </button>
         </nav>
 
         <div className="p-4 border-t border-gray-100">
@@ -152,6 +196,13 @@ const App: React.FC = () => {
           <span className="text-xs font-medium">Extrato</span>
         </button>
         <button 
+          onClick={() => handleNavigate('categories')}
+          className={`flex flex-col items-center gap-1 ${currentView === 'categories' ? 'text-gray-800' : 'text-gray-400'}`}
+        >
+          <Settings className="w-6 h-6" />
+          <span className="text-xs font-medium">Categorias</span>
+        </button>
+        <button 
           onClick={() => handleNavigate('advisor')}
           className={`flex flex-col items-center gap-1 ${currentView === 'advisor' ? 'text-purple-600' : 'text-gray-400'}`}
         >
@@ -164,7 +215,8 @@ const App: React.FC = () => {
       {isFormOpen && (
         <TransactionForm 
           onClose={() => setIsFormOpen(false)} 
-          onSubmit={addTransaction} 
+          onSubmit={addTransaction}
+          categories={categories}
         />
       )}
     </div>

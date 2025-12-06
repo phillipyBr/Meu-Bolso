@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Transaction, TransactionType } from '../types';
-import { CATEGORIES } from '../constants';
+import { Transaction, TransactionType, CategoryState } from '../types';
 import { X, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 
 interface TransactionFormProps {
   onClose: () => void;
   onSubmit: (transaction: Omit<Transaction, 'id'>) => void;
+  categories: CategoryState;
 }
 
-export const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, onSubmit }) => {
+export const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, onSubmit, categories }) => {
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
@@ -30,8 +30,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, onSub
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform transition-all scale-100">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+      <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform transition-all scale-100 max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
           <h2 className="text-xl font-bold text-gray-800">Nova Transação</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X className="w-6 h-6" />
@@ -107,10 +107,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onClose, onSub
               className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all bg-white"
             >
               <option value="" disabled>Selecione uma categoria</option>
-              {CATEGORIES[type].map(cat => (
+              {categories[type].map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
+            {categories[type].length === 0 && (
+              <p className="text-xs text-red-500 mt-1">Nenhuma categoria cadastrada. Vá em Ajustes para criar.</p>
+            )}
           </div>
 
           {/* Date */}
